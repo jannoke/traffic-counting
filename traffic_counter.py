@@ -52,6 +52,10 @@ class DetectionsManager:
         self.counts: Dict[Tuple[int, int], Dict[str, int]] = defaultdict(
             lambda: defaultdict(int)
         )
+        # (src_idx, dst_idx, tracker_id) keys already recorded – prevents a
+        # vehicle that stays in a destination zone across multiple frames from
+        # being counted more than once.
+        self._counted: set = set()
 
     def update(
         self,
@@ -76,7 +80,6 @@ class DetectionsManager:
 
         # When a known tracker ID appears in a destination zone, record the
         # source→destination pair (once per unique tracker ID per pair).
-        already_counted: set = set()
         for dst_idx, dst_dets in enumerate(detections_in_zones):
             for tid, class_id in zip(
                 dst_dets.tracker_id, dst_dets.class_id
@@ -84,8 +87,8 @@ class DetectionsManager:
                 if tid in self.tracker_id_to_source:
                     src_idx = self.tracker_id_to_source[tid]
                     key = (src_idx, dst_idx, tid)
-                    if key not in already_counted:
-                        already_counted.add(key)
+                    if key not in self._counted:
+                        self._counted.add(key)
                         class_name = CLASS_NAMES.get(int(class_id), "vehicle")
                         self.counts[(src_idx, dst_idx)][class_name] += 1
 
