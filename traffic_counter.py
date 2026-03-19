@@ -198,16 +198,25 @@ def process_video(
         color=sv.ColorPalette.DEFAULT,
         text_scale=0.5,
     )
-    zone_annotator_source = sv.PolygonZoneAnnotator(
-        color=SOURCE_ZONE_COLOUR,
-        thickness=2,
-        text_scale=0.6,
-    )
-    zone_annotator_dest = sv.PolygonZoneAnnotator(
-        color=DESTINATION_ZONE_COLOUR,
-        thickness=2,
-        text_scale=0.6,
-    )
+    # Create one annotator per zone
+    source_zone_annotators = [
+        sv.PolygonZoneAnnotator(
+            zone=zone,
+            color=SOURCE_ZONE_COLOUR,
+            thickness=2,
+            text_scale=0.6,
+        )
+        for zone in source_zones
+    ]
+    dest_zone_annotators = [
+        sv.PolygonZoneAnnotator(
+            zone=zone,
+            color=DESTINATION_ZONE_COLOUR,
+            thickness=2,
+            text_scale=0.6,
+        )
+        for zone in dest_zones
+    ]
 
     detections_manager = DetectionsManager()
     frames_generator = sv.get_video_frames_generator(source_path)
@@ -260,18 +269,12 @@ def process_video(
             )
 
         # Source zones (blue)
-        for zone, zone_cfg in zip(source_zones, source_zone_configs):
-            zone_annotator_source.zone = zone
-            frame = zone_annotator_source.annotate(
-                scene=frame, label=zone_cfg["name"]
-            )
+        for annotator, zone_cfg in zip(source_zone_annotators, source_zone_configs):
+            frame = annotator.annotate(scene=frame, label=zone_cfg["name"])
 
         # Destination zones (green)
-        for zone, zone_cfg in zip(dest_zones, dest_zone_configs):
-            zone_annotator_dest.zone = zone
-            frame = zone_annotator_dest.annotate(
-                scene=frame, label=zone_cfg["name"]
-            )
+        for annotator, zone_cfg in zip(dest_zone_annotators, dest_zone_configs):
+            frame = annotator.annotate(scene=frame, label=zone_cfg["name"])
 
         # Statistics overlay
         frame = draw_overlay_text(
