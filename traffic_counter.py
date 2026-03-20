@@ -258,10 +258,13 @@ def process_video(
         frame = trace_annotator.annotate(scene=frame, detections=detections)
 
         # Bounding boxes + labels
-        labels = [
-            f"#{tid} {CLASS_NAMES.get(int(cid), 'vehicle')}"
-            for tid, cid in zip(detections.tracker_id or [], detections.class_id or [])
-        ]
+        if len(detections) > 0:
+            labels = [
+                f"#{tid} {CLASS_NAMES.get(int(cid), 'vehicle')}"
+                for tid, cid in zip(detections.tracker_id, detections.class_id)
+            ]
+        else:
+            labels = []
         frame = box_annotator.annotate(scene=frame, detections=detections)
         if labels:
             frame = label_annotator.annotate(
